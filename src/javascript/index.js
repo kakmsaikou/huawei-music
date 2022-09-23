@@ -1,4 +1,5 @@
 import './icons.js'
+import Swiper from './swiper'
 
 class Player {
   constructor(node) {
@@ -17,13 +18,13 @@ class Player {
       .then(res => res.json())
       .then(data => {
         this.songList = data
-        this.audio.src = this.songList[this.currentIndex].url
+        this.renderSong()
       })
   }
 
   bind() {
     const self = this
-    this.root.querySelector('.btn-play-pause').onclick = function () {
+    this.$('.btn-play-pause').onclick = function () {
       if (this.classList.contains('playing')) {
         self.audio.pause()
         this.classList.remove('playing')
@@ -37,28 +38,67 @@ class Player {
       }
     }
 
-    this.root.querySelector('.btn-pre').onclick = function () {
+    this.$('.btn-pre').onclick = function () {
       self.playPreSong()
     }
 
-    this.root.querySelector('.btn-next').onclick = function () {
+    this.$('.btn-next').onclick = function () {
       self.playNextSong()
+    }
+
+    const swiper = new Swiper(this.$('.panels'))
+    swiper.on('swipLeft', function () {
+      this.classList.remove('panel1')
+      this.classList.add('panel2')
+    })
+    swiper.on('swipRight', function () {
+      this.classList.remove('panel2')
+      this.classList.add('panel1')
+    })
+  }
+
+  renderSong() {
+    const songObj = this.songList[this.currentIndex]
+    this.$('.header h1').innerText = songObj.title
+    this.$('.header p').innerText = songObj.author + '-' + songObj.album
+    this.audio.src = songObj.url
+    this.loadLyrics()
+  }
+
+  checkPause() {
+    const self = this.$('.btn-play-pause')
+    if (self.classList.contains('pause')) {
+      self.classList.remove('pause')
+      self.classList.add('playing')
+      self.querySelector('use').setAttribute('xlink:href', '#icon-play')
     }
   }
 
   playPreSong() {
     this.currentIndex = (this.songList.length + this.currentIndex - 1) % this.songList.length
     this.audio.src = this.songList[this.currentIndex].url
-    this.audio.play()
+    this.renderSong()
+    this.checkPause()
+    this.audio.oncanplaythrough = () => this.audio.play()
   }
 
   playNextSong() {
     this.currentIndex = (this.songList.length + this.currentIndex + 1) % this.songList.length
     this.audio.src = this.songList[this.currentIndex].url
-    this.audio.play()
+    this.renderSong()
+    this.checkPause()
+    this.audio.oncanplaythrough = () => this.audio.play()
+  }
+
+  loadLyrics() {
+    fetch(this.songList[this.currentIndex].lyric)
+      .then(res => res.json())
+      .then(data => {
+        console.log(data.lrc.lyric)
+      })
   }
 }
 
 
-window.p = new Player('#player')
+new Player('#player')
 
